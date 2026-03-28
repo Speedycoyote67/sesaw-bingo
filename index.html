@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SESAW Bingo</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #1a1410;
+    color: #f0ebe3;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 40px;
+  }
+
+  header { text-align: center; margin-bottom: 20px; }
+
+  header h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 32px;
+    color: #e8c97a;
+    letter-spacing: 0.03em;
+    line-height: 1.1;
+  }
+
+  header p {
+    font-size: 12px;
+    color: #8a7f6e;
+    margin-top: 6px;
+    letter-spacing: 0.03em;
+  }
+
+  #board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 16px;
+  }
+
+  /* Square cells via padding trick — works on all iOS Safari versions */
+  .cell-wrap {
+    position: relative;
+    width: 100%;
+  }
+  .cell-wrap::before {
+    content: '';
+    display: block;
+    padding-top: 100%;
+  }
+
+  .cell {
+    position: absolute;
+    inset: 0;
+    border: 1px solid #3a3028;
+    border-radius: 8px;
+    background: #231e17;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 11px;
+    line-height: 1.35;
+    padding: 6px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    color: #ccc5b5;
+    overflow: hidden;
+  }
+
+  .cell:active { transform: scale(0.96); }
+  body.setup .cell:active { background: #2e271e; border-color: #5a4e3a; }
+
+  .cell.swapping {
+    border-color: #e8c97a;
+    background: #2e2414;
+    animation: swap-flash 0.3s ease;
+  }
+
+  @keyframes swap-flash {
+    0% { transform: scale(0.9); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .cell.marked {
+    background: #7a5c1e;
+    border-color: #e8c97a;
+    color: #f5e6b8;
+  }
+
+  .cell.marked::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath d='M8 20 L16 30 L32 12' stroke='%23e8c97a' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/50% no-repeat;
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  body.locked .cell { cursor: default; }
+  body.locked .cell:active { transform: none; }
+
+  .cell-text { pointer-events: none; position: relative; z-index: 1; }
+
+  #controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 10px;
+  }
+
+  button {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:active { transform: scale(0.97); }
+
+  #shuffle-btn { background: #e8c97a; color: #1a1410; border: none; }
+  #shuffle-btn:active { background: #f0d88a; }
+
+  #confirm-btn { background: #2a5c2a; color: #a8e6a8; border: 1px solid #3a7a3a; }
+  #confirm-btn:active { background: #336633; }
+
+  #reset-btn { background: transparent; color: #8a7f6e; border: 1px solid #3a3028; }
+  #reset-btn:active { background: #2e271e; color: #ccc5b5; }
+
+  #newgame-btn { background: transparent; color: #c47a5a; border: 1px solid #5a3020; }
+  #newgame-btn:active { background: #2e1e14; color: #e8956a; }
+
+  #hint { font-size: 11px; color: #5a5040; text-align: center; max-width: 560px; line-height: 1.5; margin-bottom: 4px; }
+
+  #locked-badge {
+    display: none;
+    background: #2a5c2a;
+    color: #a8e6a8;
+    border: 1px solid #3a7a3a;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 16px;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  #bingo-banner, #fullhouse-banner {
+    display: none;
+    border-radius: 10px;
+    padding: 14px 32px;
+    font-family: Georgia, serif;
+    text-align: center;
+    margin-bottom: 16px;
+    animation: pop 0.3s ease;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  #bingo-banner { background: #e8c97a; color: #1a1410; font-size: 22px; }
+
+  #fullhouse-banner { background: #c8a830; color: #1a1410; font-size: 26px; border: 3px solid #e8c97a; }
+
+  #fullhouse-banner small {
+    display: block;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    margin-top: 4px;
+    opacity: 0.8;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0.85); opacity: 0; }
+    60% { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  #code-prompt {
+    display: none;
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 10px;
+  }
+
+  #code-prompt > div {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #code-input {
+    font-size: 14px;
+    padding: 9px 14px;
+    border-radius: 6px;
+    border: 1px solid #5a3020;
+    background: #231e17;
+    color: #f0ebe3;
+    width: 180px;
+    outline: none;
+  }
+
+  #code-error {
+    display: none;
+    color: #c47a5a;
+    font-size: 12px;
+    text-align: center;
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body class="setup">
+
+<header>
+  <h1>SESAW Bingo</h1>
+  <p id="header-sub">Hold a square to randomise it &bull; Confirm to lock your card</p>
+</header>
+
+<div id="fullhouse-banner">FULL HOUSE! 🎺🎺<small>Every square marked — incredible!</small></div>
+<div id="bingo-banner">BINGO! 🎺</div>
+<div id="locked-badge">🔒 Card locked — good luck!</div>
+<div id="board"></div>
+
+<div id="code-prompt">
+  <div>
+    <input id="code-input" type="text" placeholder="Enter code…" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+    <button id="code-submit" style="background:#c47a5a;color:#1a1410;border:none;font-size:14px;font-weight:500;padding:9px 18px;border-radius:6px;">Unlock</button>
+    <button id="code-cancel" style="background:transparent;color:#8a7f6e;border:1px solid #3a3028;font-size:14px;font-weight:500;padding:9px 14px;border-radius:6px;">Cancel</button>
+  </div>
+  <p id="code-error">Incorrect code — try again.</p>
+</div>
+
+<div id="controls">
+  <button id="shuffle-btn">New card</button>
+  <button id="confirm-btn">Confirm card</button>
+  <button id="reset-btn" style="display:none">Clear marks</button>
+  <button id="newgame-btn" style="display:none">Reset board</button>
+</div>
+
+<p id="hint">Hold a square to swap it for something random. Tap Confirm when happy.</p>
+
+<script>
+const ALL_ITEMS = [
+  "If you can't hear the tune shut up",
+  "Something to do with losing hair",
+  "When I was in the band\u2026",
+  "Look at the conductor",
+  "Threatens to break baton",
+  "Eat more curry and drink more beer",
+  "\u2018The YouTube\u2019",
+  "I might cry",
+  "Any reference to SKYWO",
+  "Reminisces about a previous concert",
+  "Reference to Dan forgetting music",
+  "Reference to trumpets needing to be louder",
+  "Reference to flutes needing to practice",
+  "Reference to clarinets being too loud on long notes",
+  "Gold star with relation to tuning",
+  "Can't see \u2014 wrong glasses",
+  "Reference to Oscar never having the right piece",
+  "Telling saxes off for talking",
+  "Ian playing random riffs or improv",
+  "Any tutor 'testing' biscuits",
+  "Complaints about SESAW being too short",
+  "Reference to Louise being a secretary/librarian",
+  "Talks about a previous band member"
+];
+
+const GRID = 16;
+const SAVE_KEY = 'sesaw_bingo_v2';
+const UNLOCK_CODE = 'WSJ2027';
+let board = [];
+let marked = new Set();
+let locked = false;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ board, marked: [...marked], locked }));
+  } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    const s = JSON.parse(raw);
+    if (!Array.isArray(s.board) || s.board.length !== GRID) return false;
+    board = s.board;
+    marked = new Set(s.marked || []);
+    locked = !!s.locked;
+    return true;
+  } catch(e) { return false; }
+}
+
+function initBoard() {
+  board = shuffle(ALL_ITEMS).slice(0, GRID);
+  marked = new Set();
+  locked = false;
+  saveState();
+  render();
+}
+
+function swapRandom(idx) {
+  const available = ALL_ITEMS.filter(item => !board.includes(item));
+  if (available.length === 0) return;
+  const pick = available[Math.floor(Math.random() * available.length)];
+  board[idx] = pick;
+  saveState();
+  renderCell(idx, true);
+}
+
+function checkFullHouse() { return marked.size === GRID; }
+
+function checkBingo() {
+  for (let r = 0; r < 4; r++) {
+    if ([0,1,2,3].every(c => marked.has(r * 4 + c))) return true;
+  }
+  for (let c = 0; c < 4; c++) {
+    if ([0,1,2,3].every(r => marked.has(r * 4 + c))) return true;
+  }
+  if ([0,5,10,15].every(i => marked.has(i))) return true;
+  if ([3,6,9,12].every(i => marked.has(i))) return true;
+  return false;
+}
+
+function updateBanners() {
+  var fh = checkFullHouse();
+  document.getElementById('fullhouse-banner').style.display = fh ? 'block' : 'none';
+  document.getElementById('bingo-banner').style.display = (!fh && checkBingo()) ? 'block' : 'none';
+}
+
+function applyLockedUI() {
+  document.body.className = locked ? 'locked' : 'setup';
+  document.getElementById('shuffle-btn').style.display = locked ? 'none' : '';
+  document.getElementById('confirm-btn').style.display = locked ? 'none' : '';
+  document.getElementById('reset-btn').style.display = locked ? '' : 'none';
+  document.getElementById('newgame-btn').style.display = locked ? '' : 'none';
+  document.getElementById('locked-badge').style.display = locked ? 'block' : 'none';
+  document.getElementById('hint').textContent = locked
+    ? 'Tap squares to mark them off. Complete a row, column or diagonal for Bingo!'
+    : 'Hold a square to swap it for something random. Tap Confirm when happy.';
+  document.getElementById('header-sub').textContent = locked
+    ? 'Tap to mark \u2022 Complete a line to win'
+    : 'Hold a square to randomise it \u2022 Confirm to lock your card';
+}
+
+function buildCell(idx) {
+  const item = board[idx];
+
+  const wrap = document.createElement('div');
+  wrap.className = 'cell-wrap';
+
+  const cell = document.createElement('div');
+  cell.className = 'cell' + (marked.has(idx) ? ' marked' : '');
+
+  const text = document.createElement('div');
+  text.className = 'cell-text';
+  text.textContent = item;
+  cell.appendChild(text);
+  wrap.appendChild(cell);
+
+  let pressTimer = null;
+  let didLong = false;
+  let startX = 0, startY = 0;
+
+  cell.addEventListener('touchstart', function(e) {
+    if (locked) return;
+    didLong = false;
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    pressTimer = setTimeout(function() {
+      didLong = true;
+      swapRandom(idx);
+    }, 600);
+  }, { passive: true });
+
+  cell.addEventListener('touchmove', function(e) {
+    if (!pressTimer) return;
+    var dx = Math.abs(e.touches[0].clientX - startX);
+    var dy = Math.abs(e.touches[0].clientY - startY);
+    if (dx > 10 || dy > 10) { clearTimeout(pressTimer); pressTimer = null; }
+  }, { passive: true });
+
+  cell.addEventListener('touchend', function(e) {
+    clearTimeout(pressTimer);
+    if (didLong) return;
+    if (!locked) return;
+    e.preventDefault();
+    toggleMark(idx, cell);
+  });
+
+  cell.addEventListener('mousedown', function() {
+    if (locked) return;
+    didLong = false;
+    pressTimer = setTimeout(function() { didLong = true; swapRandom(idx); }, 600);
+  });
+
+  var cancelMouse = function() { clearTimeout(pressTimer); pressTimer = null; };
+  cell.addEventListener('mouseup', cancelMouse);
+  cell.addEventListener('mouseleave', cancelMouse);
+
+  cell.addEventListener('click', function() {
+    if (!locked) return;
+    if (didLong) return;
+    toggleMark(idx, cell);
+  });
+
+  return wrap;
+}
+
+function toggleMark(idx, cell) {
+  if (marked.has(idx)) { marked.delete(idx); } else { marked.add(idx); }
+  cell.classList.toggle('marked', marked.has(idx));
+  saveState();
+  updateBanners();
+}
+
+function renderCell(idx, flash) {
+  var boardEl = document.getElementById('board');
+  var newWrap = buildCell(idx);
+  if (flash) newWrap.querySelector('.cell').classList.add('swapping');
+  boardEl.replaceChild(newWrap, boardEl.children[idx]);
+}
+
+function render() {
+  var boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  board.forEach(function(_, idx) { boardEl.appendChild(buildCell(idx)); });
+  document.getElementById('bingo-banner').style.display = 'none';
+  document.getElementById('fullhouse-banner').style.display = 'none';
+  applyLockedUI();
+}
+
+document.getElementById('shuffle-btn').addEventListener('click', initBoard);
+
+document.getElementById('confirm-btn').addEventListener('click', function() {
+  locked = true;
+  saveState();
+  applyLockedUI();
+});
+
+document.getElementById('reset-btn').addEventListener('click', function() {
+  marked = new Set();
+  saveState();
+  render();
+});
+
+document.getElementById('newgame-btn').addEventListener('click', function() {
+  document.getElementById('code-prompt').style.display = 'block';
+  document.getElementById('code-error').style.display = 'none';
+  document.getElementById('code-input').value = '';
+  setTimeout(function() { document.getElementById('code-input').focus(); }, 50);
+});
+
+document.getElementById('code-cancel').addEventListener('click', function() {
+  document.getElementById('code-prompt').style.display = 'none';
+});
+
+function attemptUnlock() {
+  var val = document.getElementById('code-input').value.trim().toUpperCase();
+  if (val === UNLOCK_CODE) {
+    document.getElementById('code-prompt').style.display = 'none';
+    initBoard();
+  } else {
+    document.getElementById('code-error').style.display = 'block';
+    document.getElementById('code-input').value = '';
+  }
+}
+
+document.getElementById('code-submit').addEventListener('click', attemptUnlock);
+document.getElementById('code-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') attemptUnlock();
+});
+
+if (!loadState()) { initBoard(); } else { render(); }
+</script>
+</body>
+</html>
