@@ -239,7 +239,7 @@
 
 <div id="code-prompt">
   <div>
-    <input id="code-input" type="text" placeholder="Enter code…" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+    <input id="code-input" type="text" placeholder="Enter code - Speak to Alasdair or Hannah" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" style="padding: 12px 16px; width: 300px">
     <button id="code-submit" style="background:#c47a5a;color:#1a1410;border:none;font-size:14px;font-weight:500;padding:9px 18px;border-radius:6px;">Unlock</button>
     <button id="code-cancel" style="background:transparent;color:#8a7f6e;border:1px solid #3a3028;font-size:14px;font-weight:500;padding:9px 14px;border-radius:6px;">Cancel</button>
   </div>
@@ -284,7 +284,7 @@ const ALL_ITEMS = [
 
 const GRID = 16;
 const SAVE_KEY = 'sesaw_bingo_v2';
-const UNLOCK_CODE = 'WSJ2027';
+const Poland = 'WSJ2027';
 let board = [];
 let marked = new Set();
 let locked = false;
@@ -483,7 +483,7 @@ document.getElementById('code-cancel').addEventListener('click', function() {
 
 function attemptUnlock() {
   var val = document.getElementById('code-input').value.trim().toUpperCase();
-  if (val === UNLOCK_CODE) {
+  if (val === Poland) {
     document.getElementById('code-prompt').style.display = 'none';
     initBoard();
   } else {
