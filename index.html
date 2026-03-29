@@ -376,6 +376,8 @@ var GRID = 16;
 var SAVE_KEY = 'sesaw_bingo_v2';
 var LOG_KEY = 'sesaw_bingo_log';
 var Poland = 'WSJ2027';
+var timeGateDisabled = false;
+var timeGateCode = 'SEtup';
 
 var board = [];
 var marked = new Set();
@@ -383,6 +385,7 @@ var locked = false;
 
 /* ---- Time gating ---- */
 function isActiveTime() {
+    if (timeGateDisabled) return true;
   var now = new Date();
   var day = now.getDay(); // 4 = Thursday
   var h = now.getHours();
@@ -668,16 +671,21 @@ document.getElementById('code-cancel').addEventListener('click', function() {
 });
 
 function attemptUnlock() {
-  var val = document.getElementById('code-input').value.trim().toUpperCase();
-  if (val === Poland) {
+  var val = document.getElementById('code-input').value.trim();
+    if (val === timeGateCode) {
+    timeGateDisabled = true;
+    document.getElementById('code-prompt').style.display = 'none';
+    applyLockedUI();
+    addLog('Time gate disabled for testing.');
+ } else if (val === Poland) {
     eventLog = [];
     document.getElementById('code-prompt').style.display = 'none';
-    addLog('\uD83D\uDD13', 'Board reset with code.');
+    addLog('Board reset with code.');
     initBoard();
   } else {
     document.getElementById('code-error').style.display = 'block';
     document.getElementById('code-input').value = '';
-    addLog('\u26A0\uFE0F', 'Wrong reset code entered.');
+    addLog('Wrong reset code entered.');
   }
 }
 
