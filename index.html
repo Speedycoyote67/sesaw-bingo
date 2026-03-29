@@ -64,18 +64,17 @@
     user-select: none;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
-    transition: background 0.15s, border-color 0.15s, transform 0.1s;
     color: #ccc5b5;
     overflow: hidden;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
   }
 
   .cell:active { transform: scale(0.96); }
-  body.setup .cell:active { background: #2e271e; border-color: #5a4e3a; }
+  .cell:active { background: #2e271e; border-color: #5a4e3a; }
 
   .cell.swapping {
     border-color: #e8c97a;
     background: #2e2414;
-    animation: swap-flash 0.3s ease;
   }
 
   @keyframes swap-flash {
@@ -99,7 +98,6 @@
   }
 
   body.locked .cell { cursor: default; }
-  body.locked .cell:active { transform: none; }
 
   .cell-text { pointer-events: none; position: relative; z-index: 1; }
 
@@ -299,12 +297,13 @@
 
 <header>
   <h1>SESAW Bingo</h1>
-  <p id="header-sub">Hold a square to randomise it &bull; Confirm to lock your card</p>
+  <h1><small style="font-size:15px;">Things that Howard or the other tutors say or do during SESAW</small></h1>
+  <p id="header-sub">Hold a square to randomise it &bull; Press Confirm card to lock your card</p>
 </header>
 
-<div id="fullhouse-banner">FULL HOUSE! 🎺🎺<small>Every square marked — incredible!</small></div>
-<div id="bingo-banner">BINGO! 🎺</div>
-<div id="locked-badge">🔒 Card locked — good luck!</div>
+<div id="fullhouse-banner">FULL HOUSE!</div>
+<div id="bingo-banner">BINGO!</div>
+<div id="locked-badge">Card locked — good luck!</div>
 <div id="inactive-msg"></div>
 <div id="board"></div>
 
@@ -347,47 +346,53 @@
 
 <script>
 var ALL_ITEMS = [
-  "If you can't hear the tune shut up",
-  "Something to do with losing hair",
-  "When I was in the band\u2026",
-  "Look at the conductor",
-  "Threatens to break baton",
-  "Eat more curry and drink more beer",
-  "\u2018The YouTube\u2019",
-  "I might cry",
-  "Any reference to SKYWO",
-  "Reminisces about a previous concert",
-  "Reference to Dan forgetting music",
-  "Reference to trumpets needing to be louder",
-  "Reference to flutes needing to practice",
-  "Reference to clarinets being too loud on long notes",
-  "Gold star with relation to tuning",
-  "Can't see \u2014 wrong glasses",
-  "Reference to Oscar never having the right piece",
-  "Telling saxes off for talking",
-  "Ian playing random riffs or improv",
-  "Any tutor 'testing' biscuits",
-  "Complaints about SESAW being too short",
-  "Reference to Louise being a secretary/librarian",
-  "Talks about a previous band member"
+  `"If you can't hear the tune shut up"`,
+  `Anything to do with losing hair`,
+  `"When I was in the band\u2026"`,
+  `Reference to "Look at the conductor"`,
+  `Threatens to break baton`,
+  `"Eat more curry and drink more beer"`,
+  `"The YouTube"`,
+  `"I might cry"`,
+  `Any reference to SCYWO`,
+  `Reminisces about a previous concert`,
+  `Reference to Dan forgetting music`,
+  `Reference to trumpets needing to be louder`,
+  `Reference to flutes needing to practice`,
+  `Reference to clarinets being too loud on long notes`,
+  `Gold star with relation to tuning`,
+  `Reference to not being able to see music`,
+  `Reference to Oscar never having the right music in front of him`,
+  `Telling saxes off for talking`,
+  `Ian playing random riffs or improv`,
+  `Any tutor 'testing' biscuits`,
+  `Complains about SESAW being too short`,
+  `Reference to Louise being a secretary/librarian`,
+  `Talks about a previous band member`
 ];
 
 var GRID = 16;
-var SAVE_KEY = 'sesaw_bingo testing 1';
-var LOG_KEY = 'sesaw_bingo_log testing 1';
+var SAVE_KEY = 'sesaw_bingo_v2';
+var LOG_KEY = 'sesaw_bingo_log';
 var Poland = 'WSJ2027';
 var timeGateDisabled = false;
 var timeGateCode = 'SEtup';
 
+var houses = 0
+var bingos = 0
+var lastTouchTime = 0;
+var bingoAchieved = false;
+var fullHouseAchieved = false;
 var board = [];
 var marked = new Set();
 var locked = false;
+var eventLog = [];
 
 /* ---- Time gating ---- */
 function isActiveTime() {
-    if (timeGateDisabled) return true;
+  if (timeGateDisabled) return true;
   var now = new Date();
-  var day = now.getDay(); // 4 = Thursday
+  var day = now.getDay();
   var h = now.getHours();
   var m = now.getMinutes();
   var mins = h * 60 + m;
@@ -396,6 +401,12 @@ function isActiveTime() {
 
 function inactiveMessage() {
   return 'You can only mark off squares between\n6:00 pm \u2013 8:15 pm on a Thursday.';
+}
+
+function flashCell(cell) { 
+    cell.classList.add('tapped'); 
+    setTimeout(function() 
+    { cell.classList.remove('tapped'); }, 200); 
 }
 
 /* ---- Logging ---- */
@@ -445,6 +456,12 @@ function renderLog() {
 }
 
 /* ---- State ---- */
+
+function recomputeWinState() {
+  fullHouseAchieved = checkFullHouse();
+  bingoAchieved = fullHouseAchieved || checkBingo();
+}
+
 function shuffle(arr) {
   var a = arr.slice();
   for (var i = a.length - 1; i > 0; i--) {
@@ -478,6 +495,10 @@ function initBoard() {
   saveState();
   addLog('\uD83C\uDFB2', 'New board dealt.');
   render();
+  bingoAchieved = false;
+  fullHouseAchieved = false;
+  bingos = 0
+  houses = 0
 }
 
 function swapRandom(idx) {
@@ -488,7 +509,10 @@ function swapRandom(idx) {
   board[idx] = pick;
   saveState();
   addLog('\uD83D\uDD00', 'Swapped <strong>' + old + '</strong> \u2192 <strong>' + pick + '</strong>');
-  renderCell(idx, true);
+  var boardEl = document.getElementById('board');
+  var existingCell = boardEl.children[idx].querySelector('.cell');
+  existingCell.style.transition = 'background 0.2s ease, border-color 0.2s ease';
+  existingCell.classList.add('swapping');
 }
 
 /* ---- Win checks ---- */
@@ -507,12 +531,34 @@ function checkBingo() {
 }
 
 function updateBanners() {
-  var fh = checkFullHouse();
-  document.getElementById('fullhouse-banner').style.display = fh ? 'block' : 'none';
-  document.getElementById('bingo-banner').style.display = (!fh && checkBingo()) ? 'block' : 'none';
+  var showFull = fullHouseAchieved && houses < 1;
+  var showBingo = bingoAchieved && !fullHouseAchieved && bingos < 1;
+  if (showBingo === true) {
+      bingos++
+    }
+    if (showFull === true) {
+      houses++
+    }
+  document.getElementById('fullhouse-banner').style.display = showFull ? 'block' : 'none';
+  document.getElementById('bingo-banner').style.display = showBingo ? 'block' : 'none';
+
+  if (showFull || showBingo) {
+    setTimeout(function() {
+      document.getElementById('fullhouse-banner').style.display = 'none';
+      document.getElementById('bingo-banner').style.display = 'none';
+    }, 5000);
+  }
 }
 
 /* ---- UI ---- */
+
+function pressFeedback(el) {
+  el.style.transform = 'scale(0.95)';
+  setTimeout(function() {
+    el.style.transform = '';
+  }, 120);
+}
+
 function applyLockedUI() {
   document.body.className = locked ? 'locked' : 'setup';
   document.getElementById('shuffle-btn').style.display = locked ? 'none' : '';
@@ -520,6 +566,12 @@ function applyLockedUI() {
   document.getElementById('reset-btn').style.display = locked ? '' : 'none';
   document.getElementById('newgame-btn').style.display = locked ? '' : 'none';
   document.getElementById('locked-badge').style.display = locked ? 'block' : 'none';
+  if (locked) {
+    clearTimeout(applyLockedUI._timer);
+    applyLockedUI._timer = setTimeout(function() {
+      document.getElementById('locked-badge').style.display = 'none';
+    }, 5000);
+  }
   document.getElementById('hint').textContent = locked
     ? 'Tap squares to mark them off. Complete a row, column or diagonal for Bingo!'
     : 'Hold a square to swap it for something random. Tap Confirm when happy.';
@@ -576,13 +628,23 @@ function buildCell(idx) {
     if (dx > 10 || dy > 10) { clearTimeout(pressTimer); pressTimer = null; }
   }, { passive: true });
 
-  cell.addEventListener('touchend', function(e) {
-    clearTimeout(pressTimer);
-    if (didLong) return;
-    if (!locked) return;
-    e.preventDefault();
-    toggleMark(idx, cell);
-  });
+cell.addEventListener('touchend', function(e) {
+  clearTimeout(pressTimer);
+  lastTouchTime = Date.now();
+  if (didLong) {
+    var existingCell = wrap.querySelector('.cell');
+    existingCell.querySelector('.cell-text').textContent = board[idx];
+    setTimeout(function() {
+      existingCell.style.transition = 'background 4s ease, border-color 4s ease';
+      existingCell.classList.remove('swapping');
+    }, 500);
+    return;
+  }
+e.preventDefault();
+flashCell(cell); // ALWAYS runs
+
+toggleMark(idx, cell);
+}, { passive: false });
 
   cell.addEventListener('mousedown', function() {
     if (locked) return;
@@ -591,43 +653,76 @@ function buildCell(idx) {
   });
 
   var cancelMouse = function() { clearTimeout(pressTimer); pressTimer = null; };
-  cell.addEventListener('mouseup', cancelMouse);
+  cell.addEventListener('mouseup', function() {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+    if (didLong) {
+      var existingCell = wrap.querySelector('.cell');
+      existingCell.querySelector('.cell-text').textContent = board[idx];
+      setTimeout(function() {
+        existingCell.style.transition = 'background 4s ease, border-color 4s ease';
+        existingCell.classList.remove('swapping');
+      }, 500);
+    }
+  });
   cell.addEventListener('mouseleave', cancelMouse);
 
-  cell.addEventListener('click', function() {
-    if (!locked) return;
-    if (didLong) return;
-    toggleMark(idx, cell);
-  });
-
+cell.addEventListener('click', function() {
+  flashCell(cell);
+  if (Date.now() - lastTouchTime < 500) return;
+  if (didLong) return;
+  if (!locked) return;
+  toggleMark(idx, cell);
+});
   return wrap;
 }
 
 function toggleMark(idx, cell) {
+  if (!locked) return;
   if (!isActiveTime()) {
     showInactiveMsg();
     return;
   }
+
   var wasMarked = marked.has(idx);
-  if (wasMarked) { marked.delete(idx); } else { marked.add(idx); }
-  cell.classList.toggle('marked', !wasMarked);
-  saveState();
-  var label = board[idx];
-  if (!wasMarked) {
-    addLog('\u2705', 'Marked: <strong>' + label + '</strong>');
-    if (checkFullHouse()) addLog('\uD83C\uDF89', 'FULL HOUSE!');
-    else if (checkBingo()) addLog('\uD83C\uDFB0', 'BINGO!');
+
+  if (wasMarked) {
+    marked.delete(idx);
+    cell.classList.remove('marked');
+    addLog('\u274C', 'Unmarked: <strong>' + board[idx] + '</strong>');
   } else {
-    addLog('\u274C', 'Unmarked: <strong>' + label + '</strong>');
+    marked.add(idx);
+    cell.classList.add('marked');
+
+    addLog('\u2705', 'Marked: <strong>' + board[idx] + '</strong>');
+
+    if (!fullHouseAchieved && checkFullHouse()) {
+      fullHouseAchieved = true;
+      bingoAchieved = true;
+      addLog('\uD83C\uDF89', 'FULL HOUSE!');
+    } 
+    else if (!bingoAchieved && checkBingo()) {
+      bingoAchieved = true;
+      addLog('\uD83C\uDFB0', 'BINGO!');
+    }
   }
+
+  saveState();
   updateBanners();
 }
 
 function renderCell(idx, flash) {
   var boardEl = document.getElementById('board');
-  var newWrap = buildCell(idx);
-  if (flash) newWrap.querySelector('.cell').classList.add('swapping');
-  boardEl.replaceChild(newWrap, boardEl.children[idx]);
+  var existingCell = boardEl.children[idx].querySelector('.cell');
+  existingCell.querySelector('.cell-text').textContent = board[idx];
+  if (flash) {
+    existingCell.style.transition = 'background 0.2s ease, border-color 0.2s ease';
+    existingCell.classList.add('swapping');
+    setTimeout(function() {
+      existingCell.style.transition = 'background 3s ease, border-color 3s ease';
+      existingCell.classList.remove('swapping');
+    }, 3000);
+  }
 }
 
 function render() {
@@ -654,6 +749,8 @@ document.getElementById('confirm-btn').addEventListener('click', function() {
 
 document.getElementById('reset-btn').addEventListener('click', function() {
   marked = new Set();
+  bingoAchieved = false;
+  fullHouseAchieved = false;
   saveState();
   addLog('\uD83E\uDDF9', 'Marks cleared.');
   render();
@@ -672,20 +769,24 @@ document.getElementById('code-cancel').addEventListener('click', function() {
 
 function attemptUnlock() {
   var val = document.getElementById('code-input').value.trim();
-    if (val === timeGateCode) {
+  if (val === timeGateCode) {
     timeGateDisabled = true;
     document.getElementById('code-prompt').style.display = 'none';
     applyLockedUI();
-    addLog('Time gate disabled for testing.');
- } else if (val === Poland) {
+    addLog('\uD83D\uDD13', 'Time gate disabled for testing.');
+  } else if (val === Poland) {
     eventLog = [];
     document.getElementById('code-prompt').style.display = 'none';
-    addLog('Board reset with code.');
+    addLog('\uD83D\uDD13', 'Board reset with code.');
     initBoard();
   } else {
     document.getElementById('code-error').style.display = 'block';
+    clearTimeout(attemptUnlock._timer);
+    attemptUnlock._timer = setTimeout(function() {
+      document.getElementById('code-error').style.display = 'none';
+    }, 5000);
     document.getElementById('code-input').value = '';
-    addLog('Wrong reset code entered.');
+    addLog('\u26A0\uFE0F', 'Wrong reset code entered.');
   }
 }
 
@@ -721,10 +822,14 @@ function attemptLogClear() {
     eventLog = [];
     document.getElementById('log-code-prompt').style.display = 'none';
     saveLog();
-    addLog('🗑️', 'Log cleared.');
+    addLog('\uD83D\uDDD1\uFE0F', 'Log cleared.');
     renderLog();
   } else {
     document.getElementById('log-code-error').style.display = 'block';
+    clearTimeout(attemptLogClear._timer);
+    attemptLogClear._timer = setTimeout(function() {
+      document.getElementById('log-code-error').style.display = 'none';
+    }, 5000);
     document.getElementById('log-code-input').value = '';
   }
 }
@@ -736,7 +841,12 @@ document.getElementById('log-code-input').addEventListener('keydown', function(e
 
 /* ---- Init ---- */
 loadLog();
-if (!loadState()) { initBoard(); } else { render(); }
+if (!loadState()) {
+  initBoard();
+} else {
+  recomputeWinState();
+  render();
+}
 </script>
 </body>
 </html>
