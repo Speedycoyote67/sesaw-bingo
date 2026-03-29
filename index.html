@@ -44,16 +44,8 @@
     margin-bottom: 16px;
   }
 
-  /* Square cells via padding trick — works on all iOS Safari versions */
-  .cell-wrap {
-    position: relative;
-    width: 100%;
-  }
-  .cell-wrap::before {
-    content: '';
-    display: block;
-    padding-top: 100%;
-  }
+  .cell-wrap { position: relative; width: 100%; }
+  .cell-wrap::before { content: ''; display: block; padding-top: 100%; }
 
   .cell {
     position: absolute;
@@ -136,15 +128,14 @@
 
   #shuffle-btn { background: #e8c97a; color: #1a1410; border: none; }
   #shuffle-btn:active { background: #f0d88a; }
-
   #confirm-btn { background: #2a5c2a; color: #a8e6a8; border: 1px solid #3a7a3a; }
   #confirm-btn:active { background: #336633; }
-
   #reset-btn { background: transparent; color: #8a7f6e; border: 1px solid #3a3028; }
   #reset-btn:active { background: #2e271e; color: #ccc5b5; }
-
   #newgame-btn { background: transparent; color: #c47a5a; border: 1px solid #5a3020; }
   #newgame-btn:active { background: #2e1e14; color: #e8956a; }
+  #log-btn { background: transparent; color: #8a7f6e; border: 1px solid #3a3028; }
+  #log-btn:active { background: #2e271e; color: #ccc5b5; }
 
   #hint { font-size: 11px; color: #5a5040; text-align: center; max-width: 560px; line-height: 1.5; margin-bottom: 4px; }
 
@@ -161,6 +152,21 @@
     margin-bottom: 8px;
   }
 
+  #inactive-msg {
+    display: none;
+    background: #2a1f10;
+    color: #c47a5a;
+    border: 1px solid #5a3020;
+    border-radius: 8px;
+    font-size: 12px;
+    text-align: center;
+    padding: 10px 16px;
+    max-width: 560px;
+    width: 100%;
+    margin-bottom: 10px;
+    line-height: 1.5;
+  }
+
   #bingo-banner, #fullhouse-banner {
     display: none;
     border-radius: 10px;
@@ -174,9 +180,7 @@
   }
 
   #bingo-banner { background: #e8c97a; color: #1a1410; font-size: 22px; }
-
   #fullhouse-banner { background: #c8a830; color: #1a1410; font-size: 26px; border: 3px solid #e8c97a; }
-
   #fullhouse-banner small {
     display: block;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -197,14 +201,7 @@
     max-width: 560px;
     margin-bottom: 10px;
   }
-
-  #code-prompt > div {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    justify-content: center;
-  }
-
+  #code-prompt > div { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; }
   #code-input {
     font-size: 14px;
     padding: 9px 14px;
@@ -215,13 +212,86 @@
     width: 180px;
     outline: none;
   }
+  #code-error { display: none; color: #c47a5a; font-size: 12px; text-align: center; margin-top: 6px; }
 
-  #code-error {
+  /* Log panel */
+  #log-panel {
     display: none;
-    color: #c47a5a;
+    position: fixed;
+    inset: 0;
+    background: #111009;
+    z-index: 100;
+    flex-direction: column;
+    padding: 0;
+  }
+  #log-panel.open { display: flex; }
+  #log-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #3a3028;
+    flex-shrink: 0;
+  }
+  #log-header h2 { font-family: Georgia, serif; font-size: 18px; color: #e8c97a; font-weight: normal; }
+  #log-close {
+    background: transparent;
+    border: 1px solid #3a3028;
+    color: #8a7f6e;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 6px;
+  }
+  #log-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .log-entry {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
     font-size: 12px;
-    text-align: center;
-    margin-top: 6px;
+    line-height: 1.4;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #2a231a;
+  }
+  .log-time { color: #5a5040; flex-shrink: 0; font-size: 11px; padding-top: 1px; min-width: 48px; }
+  .log-icon { flex-shrink: 0; font-size: 14px; }
+  .log-text { color: #ccc5b5; }
+  .log-text strong { color: #e8c97a; font-weight: 500; }
+  #log-empty { color: #5a5040; font-size: 13px; text-align: center; padding: 40px 0; }
+  #log-code-prompt {
+    display: none;
+    padding: 10px 20px 4px;
+    flex-shrink: 0;
+  }
+  #log-code-prompt > div { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  #log-code-input {
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #5a3020;
+    background: #231e17;
+    color: #f0ebe3;
+    flex: 1;
+    min-width: 0;
+    outline: none;
+  }
+  #log-code-error { display: none; color: #c47a5a; font-size: 11px; margin-top: 6px; }
+
+  #log-clear-btn {
+    margin: 0 20px 16px;
+    background: transparent;
+    color: #c47a5a;
+    border: 1px solid #5a3020;
+    font-size: 13px;
+    padding: 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
   }
 </style>
 </head>
@@ -235,6 +305,7 @@
 <div id="fullhouse-banner">FULL HOUSE! 🎺🎺<small>Every square marked — incredible!</small></div>
 <div id="bingo-banner">BINGO! 🎺</div>
 <div id="locked-badge">🔒 Card locked — good luck!</div>
+<div id="inactive-msg"></div>
 <div id="board"></div>
 
 <div id="code-prompt">
@@ -251,12 +322,31 @@
   <button id="confirm-btn">Confirm card</button>
   <button id="reset-btn" style="display:none">Clear marks</button>
   <button id="newgame-btn" style="display:none">Reset board</button>
+  <button id="log-btn">Activity log</button>
 </div>
 
 <p id="hint">Hold a square to swap it for something random. Tap Confirm when happy.</p>
 
+<!-- Log panel -->
+<div id="log-panel">
+  <div id="log-header">
+    <h2>Activity log</h2>
+    <button id="log-close">Close</button>
+  </div>
+  <div id="log-list"><p id="log-empty">No activity yet.</p></div>
+  <div id="log-code-prompt">
+    <div>
+      <input id="log-code-input" type="text" placeholder="Enter code - Speak to Alasdair or Hannah" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+      <button id="log-code-submit" style="background:#c47a5a;color:#1a1410;border:none;font-size:13px;font-weight:500;padding:8px 16px;border-radius:6px;white-space:nowrap;">Clear</button>
+      <button id="log-code-cancel" style="background:transparent;color:#8a7f6e;border:1px solid #3a3028;font-size:13px;font-weight:500;padding:8px 12px;border-radius:6px;">Cancel</button>
+    </div>
+    <p id="log-code-error">Incorrect code — try again.</p>
+  </div>
+  <button id="log-clear-btn">Clear log</button>
+</div>
+
 <script>
-const ALL_ITEMS = [
+var ALL_ITEMS = [
   "If you can't hear the tune shut up",
   "Something to do with losing hair",
   "When I was in the band\u2026",
@@ -282,33 +372,94 @@ const ALL_ITEMS = [
   "Talks about a previous band member"
 ];
 
-const GRID = 16;
-const SAVE_KEY = 'sesaw_bingo_v2';
-const Poland = 'WSJ2027';
-let board = [];
-let marked = new Set();
-let locked = false;
+var GRID = 16;
+var SAVE_KEY = 'sesaw_bingo_v2';
+var LOG_KEY = 'sesaw_bingo_log';
+var Poland = 'WSJ2027';
 
+var board = [];
+var marked = new Set();
+var locked = false;
+
+/* ---- Time gating ---- */
+function isActiveTime() {
+  var now = new Date();
+  var day = now.getDay(); // 4 = Thursday
+  var h = now.getHours();
+  var m = now.getMinutes();
+  var mins = h * 60 + m;
+  return day === 4 && mins >= 18 * 60 && mins < 20 * 60 + 15;
+}
+
+function inactiveMessage() {
+  return 'You can only mark off squares between\n6:00 pm \u2013 8:15 pm on a Thursday.';
+}
+
+/* ---- Logging ---- */
+function timestamp() {
+  var now = new Date();
+  var h = now.getHours();
+  var m = now.getMinutes().toString().padStart(2,'0');
+  var ampm = h >= 12 ? 'pm' : 'am';
+  var h12 = h % 12 || 12;
+  return h12 + ':' + m + ampm;
+}
+
+function addLog(icon, html) {
+  eventLog.push({ t: timestamp(), icon: icon, html: html });
+  saveLog();
+}
+
+function saveLog() {
+  try { localStorage.setItem(LOG_KEY, JSON.stringify(eventLog)); } catch(e) {}
+}
+
+function loadLog() {
+  try {
+    var raw = localStorage.getItem(LOG_KEY);
+    if (raw) eventLog = JSON.parse(raw);
+  } catch(e) {}
+}
+
+function renderLog() {
+  var list = document.getElementById('log-list');
+  var empty = document.getElementById('log-empty');
+  list.innerHTML = '';
+  if (eventLog.length === 0) {
+    list.appendChild(empty);
+    return;
+  }
+  var reversed = eventLog.slice().reverse();
+  reversed.forEach(function(entry) {
+    var div = document.createElement('div');
+    div.className = 'log-entry';
+    div.innerHTML =
+      '<span class="log-time">' + entry.t + '</span>' +
+      '<span class="log-icon">' + entry.icon + '</span>' +
+      '<span class="log-text">' + entry.html + '</span>';
+    list.appendChild(div);
+  });
+}
+
+/* ---- State ---- */
 function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
   }
   return a;
 }
 
 function saveState() {
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ board, marked: [...marked], locked }));
-  } catch(e) {}
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ board: board, marked: Array.from(marked), locked: locked })); } catch(e) {}
 }
 
 function loadState() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    var raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return false;
-    const s = JSON.parse(raw);
+    var s = JSON.parse(raw);
     if (!Array.isArray(s.board) || s.board.length !== GRID) return false;
     board = s.board;
     marked = new Set(s.marked || []);
@@ -322,29 +473,33 @@ function initBoard() {
   marked = new Set();
   locked = false;
   saveState();
+  addLog('\uD83C\uDFB2', 'New board dealt.');
   render();
 }
 
 function swapRandom(idx) {
-  const available = ALL_ITEMS.filter(item => !board.includes(item));
+  var available = ALL_ITEMS.filter(function(item) { return board.indexOf(item) === -1; });
   if (available.length === 0) return;
-  const pick = available[Math.floor(Math.random() * available.length)];
+  var pick = available[Math.floor(Math.random() * available.length)];
+  var old = board[idx];
   board[idx] = pick;
   saveState();
+  addLog('\uD83D\uDD00', 'Swapped <strong>' + old + '</strong> \u2192 <strong>' + pick + '</strong>');
   renderCell(idx, true);
 }
 
+/* ---- Win checks ---- */
 function checkFullHouse() { return marked.size === GRID; }
 
 function checkBingo() {
-  for (let r = 0; r < 4; r++) {
-    if ([0,1,2,3].every(c => marked.has(r * 4 + c))) return true;
+  for (var r = 0; r < 4; r++) {
+    if ([0,1,2,3].every(function(c) { return marked.has(r * 4 + c); })) return true;
   }
-  for (let c = 0; c < 4; c++) {
-    if ([0,1,2,3].every(r => marked.has(r * 4 + c))) return true;
+  for (var c = 0; c < 4; c++) {
+    if ([0,1,2,3].every(function(r) { return marked.has(r * 4 + c); })) return true;
   }
-  if ([0,5,10,15].every(i => marked.has(i))) return true;
-  if ([3,6,9,12].every(i => marked.has(i))) return true;
+  if ([0,5,10,15].every(function(i) { return marked.has(i); })) return true;
+  if ([3,6,9,12].every(function(i) { return marked.has(i); })) return true;
   return false;
 }
 
@@ -354,6 +509,7 @@ function updateBanners() {
   document.getElementById('bingo-banner').style.display = (!fh && checkBingo()) ? 'block' : 'none';
 }
 
+/* ---- UI ---- */
 function applyLockedUI() {
   document.body.className = locked ? 'locked' : 'setup';
   document.getElementById('shuffle-btn').style.display = locked ? 'none' : '';
@@ -369,24 +525,35 @@ function applyLockedUI() {
     : 'Hold a square to randomise it \u2022 Confirm to lock your card';
 }
 
-function buildCell(idx) {
-  const item = board[idx];
+function showInactiveMsg() {
+  var el = document.getElementById('inactive-msg');
+  el.style.display = 'block';
+  el.style.whiteSpace = 'pre-line';
+  el.textContent = inactiveMessage();
+  clearTimeout(showInactiveMsg._timer);
+  showInactiveMsg._timer = setTimeout(function() {
+    el.style.display = 'none';
+  }, 4000);
+}
 
-  const wrap = document.createElement('div');
+/* ---- Cell building ---- */
+function buildCell(idx) {
+  var item = board[idx];
+  var wrap = document.createElement('div');
   wrap.className = 'cell-wrap';
 
-  const cell = document.createElement('div');
+  var cell = document.createElement('div');
   cell.className = 'cell' + (marked.has(idx) ? ' marked' : '');
 
-  const text = document.createElement('div');
+  var text = document.createElement('div');
   text.className = 'cell-text';
   text.textContent = item;
   cell.appendChild(text);
   wrap.appendChild(cell);
 
-  let pressTimer = null;
-  let didLong = false;
-  let startX = 0, startY = 0;
+  var pressTimer = null;
+  var didLong = false;
+  var startX = 0, startY = 0;
 
   cell.addEventListener('touchstart', function(e) {
     if (locked) return;
@@ -434,9 +601,22 @@ function buildCell(idx) {
 }
 
 function toggleMark(idx, cell) {
-  if (marked.has(idx)) { marked.delete(idx); } else { marked.add(idx); }
-  cell.classList.toggle('marked', marked.has(idx));
+  if (!isActiveTime()) {
+    showInactiveMsg();
+    return;
+  }
+  var wasMarked = marked.has(idx);
+  if (wasMarked) { marked.delete(idx); } else { marked.add(idx); }
+  cell.classList.toggle('marked', !wasMarked);
   saveState();
+  var label = board[idx];
+  if (!wasMarked) {
+    addLog('\u2705', 'Marked: <strong>' + label + '</strong>');
+    if (checkFullHouse()) addLog('\uD83C\uDF89', 'FULL HOUSE!');
+    else if (checkBingo()) addLog('\uD83C\uDFB0', 'BINGO!');
+  } else {
+    addLog('\u274C', 'Unmarked: <strong>' + label + '</strong>');
+  }
   updateBanners();
 }
 
@@ -450,23 +630,29 @@ function renderCell(idx, flash) {
 function render() {
   var boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
-  board.forEach(function(_, idx) { boardEl.appendChild(buildCell(idx)); });
+  for (var i = 0; i < board.length; i++) {
+    boardEl.appendChild(buildCell(i));
+  }
   document.getElementById('bingo-banner').style.display = 'none';
   document.getElementById('fullhouse-banner').style.display = 'none';
+  document.getElementById('inactive-msg').style.display = 'none';
   applyLockedUI();
 }
 
+/* ---- Button wiring ---- */
 document.getElementById('shuffle-btn').addEventListener('click', initBoard);
 
 document.getElementById('confirm-btn').addEventListener('click', function() {
   locked = true;
   saveState();
+  addLog('\uD83D\uDD12', 'Card confirmed and locked.');
   applyLockedUI();
 });
 
 document.getElementById('reset-btn').addEventListener('click', function() {
   marked = new Set();
   saveState();
+  addLog('\uD83E\uDDF9', 'Marks cleared.');
   render();
 });
 
@@ -484,11 +670,14 @@ document.getElementById('code-cancel').addEventListener('click', function() {
 function attemptUnlock() {
   var val = document.getElementById('code-input').value.trim().toUpperCase();
   if (val === Poland) {
+    eventLog = [];
     document.getElementById('code-prompt').style.display = 'none';
+    addLog('\uD83D\uDD13', 'Board reset with code.');
     initBoard();
   } else {
     document.getElementById('code-error').style.display = 'block';
     document.getElementById('code-input').value = '';
+    addLog('\u26A0\uFE0F', 'Wrong reset code entered.');
   }
 }
 
@@ -497,6 +686,48 @@ document.getElementById('code-input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') attemptUnlock();
 });
 
+document.getElementById('log-btn').addEventListener('click', function() {
+  renderLog();
+  document.getElementById('log-panel').classList.add('open');
+});
+
+document.getElementById('log-close').addEventListener('click', function() {
+  document.getElementById('log-panel').classList.remove('open');
+  document.getElementById('log-code-prompt').style.display = 'none';
+});
+
+document.getElementById('log-clear-btn').addEventListener('click', function() {
+  document.getElementById('log-code-prompt').style.display = 'block';
+  document.getElementById('log-code-error').style.display = 'none';
+  document.getElementById('log-code-input').value = '';
+  setTimeout(function() { document.getElementById('log-code-input').focus(); }, 50);
+});
+
+document.getElementById('log-code-cancel').addEventListener('click', function() {
+  document.getElementById('log-code-prompt').style.display = 'none';
+});
+
+function attemptLogClear() {
+  var val = document.getElementById('log-code-input').value.trim().toUpperCase();
+  if (val === Poland) {
+    eventLog = [];
+    document.getElementById('log-code-prompt').style.display = 'none';
+    saveLog();
+    addLog('🗑️', 'Log cleared.');
+    renderLog();
+  } else {
+    document.getElementById('log-code-error').style.display = 'block';
+    document.getElementById('log-code-input').value = '';
+  }
+}
+
+document.getElementById('log-code-submit').addEventListener('click', attemptLogClear);
+document.getElementById('log-code-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') attemptLogClear();
+});
+
+/* ---- Init ---- */
+loadLog();
 if (!loadState()) { initBoard(); } else { render(); }
 </script>
 </body>
