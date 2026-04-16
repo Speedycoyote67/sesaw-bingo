@@ -372,8 +372,8 @@ var ALL_ITEMS = [
 ];
 
 var GRID = 16;
-var SAVE_KEY = 'sesaw_bingo testing.1';
-var LOG_KEY = 'sesaw_bingo_log testing.1';
+var SAVE_KEY = 'sesaw_bingo live.1';
+var LOG_KEY = 'sesaw_bingo_log live.1';
 var Poland = 'WSJ2027';
 var timeGateDisabled = false;
 var timeGateCode = 'SEtup';
@@ -396,11 +396,11 @@ function isActiveTime() {
   var h = now.getHours();
   var m = now.getMinutes();
   var mins = h * 60 + m;
-  return day === 4 && mins >= 18 * 60 && mins < 20 * 60 + 15;
+  return day === 4 && mins >= 17 * 60 + 30 && mins < 20 * 60 + 15;
 }
 
 function inactiveMessage() {
-  return 'You can only mark off squares between\n6:00 pm \u2013 8:15 pm on a Thursday.';
+  return 'You can only mark off squares between\n17:30 \u2013 20:15 on a Thursday.';
 }
 
 function flashCell(cell) { 
